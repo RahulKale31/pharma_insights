@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - elasticsearch
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/pharma_db
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./app:/app
+    networks:
+      - pharma_network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    depends_on:
+      - redis
+      - postgres
+      - elasticsearch
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/pharma_db
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./app:/app
+    networks:
+      - pharma_network
+
+  postgres:
+    image: postgres:14
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=pharma_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pharma_network
+
+  elasticsearch:
+    image: elasticsearch:7.17.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - pharma_network
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+    networks:
+      - pharma_network
+
+volumes:
+  postgres_data:
+  elasticsearch_data:
+
+networks:
+  pharma_network:
+    driver: bridge
