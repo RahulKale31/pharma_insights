@@ -7,5 +7,6 @@ celery
 redis
 pandas
 requests
-python-jwt
+jwt
 python-multipart
+python-dotenv==1.0.0sa
